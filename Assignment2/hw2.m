@@ -1,0 +1,187 @@
+%% Assignment 2
+
+%% Question 2
+
+%% (a) Noise Reduction
+imLena = imread('lena_std.tif');
+imLenaGray = rgb2gray(imLena);
+imshow(imLenaGray);
+
+filt1 = 1/159 * [2 4 5 4 2;
+4 9 12 9 4;
+5 12 15 12 5;
+4 9 12 9 4;
+2 4 5 4 2];
+
+imfilt1 = imfilter(imLenaGray, filt1);
+figure(1)
+imshow(imfilt1);
+imwrite(imfilt1, 'LenaFirstfilt.jpg');
+
+%% (b) Gradient Magnitude and angle
+
+%% Compute Dx, Dy
+filtx = [-1 0 1; -2 0 2; -1 0 1];
+filty = [1 2 1; 0 0 0; -1 -2 -1];
+Dx = double(imfilter(imfilt1, filtx))/255;
+Dy = double(imfilter(imfilt1, filty))/255;
+figure(2)
+imshow(Dx);
+imwrite(Dx, 'LenaXderivative.jpg');
+figure(3)
+imshow(Dy);
+imwrite(Dy, 'LenaYderivative.jpg');
+
+%% Compute gradient magnitude
+Dmag = sqrt(Dx.*Dx + Dy.*Dy);
+figure(4)
+imshow(Dmag);
+imwrite(Dmag, 'LenaGmag.jpg');
+
+%% Compute angle of gradient
+theta = atan2(Dy, Dx);
+theta = theta / pi * 180;
+[row, col] = size(theta);
+thetaPrime = theta;
+
+for i = 1 : row
+    for j = 1 : col
+        element = theta(i, j);
+        if ((element <= 22.5 && element >= -22.5) || (element >= 157.5 && element <= 202.5))
+            thetaPrime(i, j) = 0;
+        elseif ((element > 22.5 && element <= 67.5) || (element > 202.5 && element <= 247.5))
+            thetaPrime(i, j) = 45;
+        elseif ((element > 67.5 && element <= 112.5) || (element > 247.5 && element <= 292.5))
+            thetaPrime(i, j) = 90;
+        else thetaPrime = 135;
+        end;
+    end;
+end;
+
+%% Non maximum suppression
+nonMaxSup = Dmag;
+for i = 2 : row - 1
+    for j = 2 : col - 1
+        localAngle = thetaPrime(i, j);
+        localGrad = Dmag(i, j);
+        if (localAngle == 0) 
+            if (localGrad > Dmag(i + 1, j) && localGrad > Dmag(i - 1, j))
+                nonMaxSup(i, j) = localGrad;
+            else nonMaxSup(i, j) = 0;
+            end
+        end
+       
+        if (localAngle == 90)
+            if (localGrad > Dmag(i, j + 1) && localGrad > Dmag(i, j - 1))
+                nonMaxSup(i, j) = localGrad;
+            else nonMaxSup(i, j) = 0;
+            end
+        end
+               
+        if (localAngle == 45)
+            if (localGrad > Dmag(i + 1, j + 1) && localGrad > Dmag(i - 1, j - 1))
+                nonMaxSup(i, j) = localGrad;
+            else nonMaxSup(i, j) = 0;
+            end
+        end
+                
+        if (localAngle == 135)
+            if (localGrad > Dmag(i - 1, j + 1) && localGrad > Dmag(i + 1, j - 1))
+                nonMaxSup(i, j) = localGrad;
+            else nonMaxSup(i, j) = 0;
+            end
+        end
+    end
+end
+
+figure(5)
+imshow(nonMaxSup);
+imwrite(nonMaxSup, 'LenanonMaxSup.jpg');
+
+%% Hysteresis Thresholding
+thigh = 0.3;
+tlow = 0.1;
+hysthresh = zeros(row, col);
+
+for i = 1 : row
+    for j = 1 : col
+        localMax = nonMaxSup(i, j);
+        
+        if (localMax >= thigh)
+            hysthresh(i, j) = 1;
+        elseif (localMax < tlow)
+            hysthresh(i, j) = 0;
+        else
+            hashigh3 = false;
+            hasmid3 = false;
+            for m = i - 1 : i + 1
+                for n = j - 1 : j + 1
+                    if (m <= 0 || m > row || n <= 0 || n > col || (m==i) || (n==j))
+                        continue;
+                    end
+                    if (nonMaxSup(m, n) >= thigh)
+                        hashigh3 = true;
+                        break;
+                    end
+                    if (nonMaxSup(m, n) >= tlow)
+                        hasmid3 = true;
+                    end
+                end
+                if (hashigh3 == true)
+                    hysthresh(i, j) = 1;
+                    break;
+                end
+            end
+            
+            if (hashigh3 == false && hasmid3 == false)
+                hysthresh(i, j) = 0;
+            end
+            if (hashigh3 == false && hasmid3 == true)
+                hashigh5 = false;
+                for k = i - 2 : i + 2
+                    for l = j - 2 : j + 2
+                        if (k <= 0 || k > row || l <= 0 || l > col)
+                            continue;
+                        end
+                        if (nonMaxSup(k, l) >= thigh)
+                            hashigh5 = true;
+                            hysthresh(i, j) = 1;
+                            break;
+                        end
+                    end
+                end
+                if (hashigh5 == false)
+                    hysthresh(i, j) = 0;
+                end
+            end
+        end
+    end
+end
+
+figure(6)
+imshow(hysthresh);
+imwrite(hysthresh, 'Lenathresh.jpg');
+
+%% Grad credits: hybrid image
+lowpassfilt = fspecial('gaussian', 11, 8.5);
+lowpassfilt1 = fspecial('gaussian', 80, 45);
+
+im1 = imread('james.jpg');
+im1 = rgb2gray(im1);
+im1 = im1/1.5; % Adjust the pixel intensity globally
+im2 = imread('jing.jpg');
+im2 = rgb2gray(im2);
+
+lowpassim = imfilter(im1, lowpassfilt);
+figure(1)
+imshow(lowpassim);
+highpassim = imfilter(im2, lowpassfilt1);
+highpassim = im2 - highpassim; % high pass filtered image is generated by an impulse minus low pass filted image
+figure(2)
+imshow(highpassim);
+im3 = lowpassim + highpassim;
+imwrite(lowpassim, 'james1.jpg');
+imwrite(highpassim, 'jing1.jpg');
+figure(3)
+imshow(im3);
+imwrite(im3, 'hybrid.jpg');                    

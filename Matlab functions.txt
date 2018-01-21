@@ -1,0 +1,42 @@
+Matlab functions:
+
+XX = imread(‘fruits.jpg’): read in an image
+
+class(XX): class of the created object
+
+size(XX): size of the created object
+
+imshow(XX): display the image object
+
+YY = rgb2gray(XX): convert the rgb image to grayscale
+
+figure(X): create a new figure window
+
+close(X): close the X image
+
+subplot(rows, cols, current): plot a rows row, cols col image plot, with the current image index at the current spot
+
+clf: clear the current figure
+
+imhist: show the histogram of the image
+
+echo off: turns off the echoing of commands in all script files
+echo is mainly used for debugging
+
+find: find indices and values of non-zero elements
+
+imwrite(XX, xx.jpg): save image in a file
+
+special: create predefined 2-D filter
+
+surf: 3-D shaded surface plot
+
+imfilter: performs 2D convolution and has nice boundary condition handling
+
+imresize(XX, 1.5, ‘bicubic’): resize image
+
+hold: retain current plot while adding new plots
+
+imrotate:
+
+imtransform:

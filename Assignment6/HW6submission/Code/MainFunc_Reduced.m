@@ -1,0 +1,4 @@
+getSIFTfeature;
+Clustering;
+GetTrainingHistogram;
+reducedDataSet;
